@@ -7,10 +7,10 @@ import time
 # ==========================================================
 
 # Cambia este valor por el estado que quieras descargar
-ESTADO = "Durango"
+ESTADO = "Guanajuato"
 
 # Ruta del CSV
-CSV_MUNICIPIOS = r"poblacion.csv"
+CSV_MUNICIPIOS = r"C:\Users\rodol\Downloads\clima\dengue_Proyecto_BI\Datos_Clima\Datos_por_municipio\poblacion.csv"
 
 # Endpoint de Open-Meteo
 URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -123,11 +123,21 @@ for inicio in range(0, len(municipios), TAM_LOTE):
 # GUARDAR EXCEL
 # ==========================================================
 
+import os
+
 df = pd.DataFrame(registros)
 
 nombre = ESTADO.replace(" ", "_")
 
-archivo = f"clima_{nombre}.xlsx"
+# Ruta de la carpeta donde quieres guardar
+ruta = r"Datos_por_municipio"   # relativa a tu proyecto
+# Si quieres absoluta, pon algo como: r"C:\Users\rodo\Documents\Datos_Clima\Datos_por_municipio"
+
+# Crear la carpeta si no existe
+os.makedirs(ruta, exist_ok=True)
+
+# Construir la ruta completa del archivo
+archivo = os.path.join(ruta, f"clima_{nombre}.xlsx")
 
 df.to_excel(
     archivo,
