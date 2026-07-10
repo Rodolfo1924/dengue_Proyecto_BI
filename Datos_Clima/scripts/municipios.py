@@ -10,7 +10,7 @@ import time
 ESTADO = "Guanajuato"
 
 # Ruta del CSV
-CSV_MUNICIPIOS = r"C:\Users\rodol\Downloads\clima\dengue_Proyecto_BI\Datos_Clima\Datos_por_municipio\poblacion.csv"
+CSV_MUNICIPIOS = r"\Datos_por_municipio\poblacion.csv"
 
 # Endpoint de Open-Meteo
 URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -131,7 +131,6 @@ nombre = ESTADO.replace(" ", "_")
 
 # Ruta de la carpeta donde quieres guardar
 ruta = r"Datos_por_municipio"   # relativa a tu proyecto
-# Si quieres absoluta, pon algo como: r"C:\Users\rodo\Documents\Datos_Clima\Datos_por_municipio"
 
 # Crear la carpeta si no existe
 os.makedirs(ruta, exist_ok=True)
