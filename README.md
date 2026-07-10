@@ -19,6 +19,7 @@ Para ello se diseñó un **modelo dimensional en esquema de constelación (galax
 | **Open-Meteo** | Variables climáticas diarias por estado (temperatura máx/mín, sensación térmica, lluvia acumulada, evapotranspiración). |
 | **CONAPO** | Proyecciones y estimaciones de población por entidad, año, grupo de edad y sexo. |
 | **INEGI** | Catálogo de claves geográficas oficiales (CVE_GEO, 2020), usado para estandarizar y unir las tres fuentes anteriores. |
+| **INEGI (vía gist de lapanquecita)** | Latitud, longitud y población por municipio, 2020. Datos tomados de [poblacion.csv](https://gist.github.com/lapanquecita/1b819ec5373f9304efc52149e96a91b7), compilado por [@lapanquecita](https://github.com/lapanquecita) a partir de cifras de INEGI. |
 
 ## Modelo de datos
 
@@ -33,3 +34,7 @@ Y de **dimensiones conformadas** compartidas entre ellas (`Dim_Tiempo`, `Dim_Geo
 ## Contexto académico
 
 Proyecto realizado como parte de la materia de **Inteligencia de Negocios**, Instituto Tecnológico de Matehuala.
+
+## Créditos de datos
+
+- Latitud, longitud y población municipal: datos de **INEGI (2020)**, compilados en formato CSV por [@lapanquecita](https://github.com/lapanquecita) — [gist original](https://gist.github.com/lapanquecita/1b819ec5373f9304efc52149e96a91b7).
