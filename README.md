@@ -30,14 +30,6 @@ El modelo se compone de **3 tablas de hechos**:
 
 Y de **dimensiones conformadas** compartidas entre ellas (`Dim_Tiempo`, `Dim_Geografia`, `Dim_Sexo`, `Dim_Edad`), además de **dimensiones exclusivas** de `Fact_Casos_Dengue` (`Dim_Institucion`, `Dim_Diagnostico` y `Dim_Comorbilidad` como dimensión basurero).
 
-## Contenido del repositorio
-
-```
-├── Modelo_Constelacion_Dengue.docx     # Documentación del modelo dimensional
-├── Reporte_BI_Dengue.docx              # Reporte del proyecto
-└── README.md
-```
-
 ## Contexto académico
 
 Proyecto realizado como parte de la materia de **Inteligencia de Negocios**, Instituto Tecnológico de Matehuala.
