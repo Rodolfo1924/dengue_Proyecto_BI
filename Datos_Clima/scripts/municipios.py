@@ -129,8 +129,7 @@ df = pd.DataFrame(registros)
 
 nombre = ESTADO.replace(" ", "_")
 
-# Ruta de la carpeta donde quieres guardar
-ruta = r"Datos_por_municipio"   # relativa a tu proyecto
+ruta = r"Datos_por_municipio"   #relativa
 
 # Crear la carpeta si no existe
 os.makedirs(ruta, exist_ok=True)
