@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import time
 import os
+from calendar import isleap
 
 # ==========================================================
 # CONFIGURACIÓN
@@ -29,11 +30,13 @@ TAM_LOTE = 10              # municipios por request
 MAX_REINTENTOS = 5         # reintentos ante errores temporales (429 pasajero, timeouts, etc.)
 ESPERA_ENTRE_REQUESTS = 1.2  # segundos entre peticiones exitosas
 
-RUTA_SALIDA = "Datos_por_municipio\Por_Dia"
+RUTA_SALIDA = r"Datos_por_municipio\Por_Dia"
 os.makedirs(RUTA_SALIDA, exist_ok=True)
 nombre = ESTADO.replace(" ", "_")
 ARCHIVO_CSV = os.path.join(RUTA_SALIDA, f"clima_{nombre}.csv")
 ARCHIVO_LOG_FALLOS = os.path.join(RUTA_SALIDA, f"fallos_{nombre}.csv")
+REPORTE_DUPLICADOS = os.path.join(RUTA_SALIDA, f"duplicados_{nombre}.csv")
+REPORTE_INCOMPLETOS = os.path.join(RUTA_SALIDA, f"incompletos_{nombre}.csv")
 
 # ==========================================================
 # LEER CSV Y FILTRAR ESTADO
@@ -52,14 +55,74 @@ print(f"\nEstado: {ESTADO}")
 print(f"Municipios: {len(municipios)}")
 
 # ==========================================================
-# RETOMAR SI YA HAY DESCARGAS PREVIAS (checkpoint)
+# VERIFICACIÓN DE INTEGRIDAD (checkpoint + reporte final)
 # ==========================================================
 
-ya_descargados = set()
-if os.path.exists(ARCHIVO_CSV):
-    df_previo = pd.read_csv(ARCHIVO_CSV, usecols=["municipio", "anio"])
-    ya_descargados = set(zip(df_previo["municipio"], df_previo["anio"]))
-    print(f"Retomando: {len(ya_descargados)} combinaciones municipio-año ya descargadas.")
+def dias_esperados(anio):
+    if anio == RANGO_FIN:
+        return (pd.Timestamp(f"{RANGO_FIN}-06-30") - pd.Timestamp(f"{anio}-01-01")).days + 1
+    return 366 if isleap(anio) else 365
+
+
+def verificar_estado(reparar_duplicados=True, imprimir_reporte=False):
+    """
+    Lee el CSV y devuelve:
+      - ya_descargados: set de (municipio, anio) que están completos y sin duplicados
+      - incompletos: DataFrame con lo que falta o quedó a medias
+
+    Si reparar_duplicados=True, quita filas duplicadas (municipio+fecha) del CSV,
+    dejando la primera ocurrencia.
+
+    Si imprimir_reporte=True, además guarda CSVs de duplicados/incompletos y
+    muestra un resumen (para usarse como reporte final, no solo como checkpoint).
+    """
+    if not os.path.exists(ARCHIVO_CSV):
+        return set(), None
+
+    df = pd.read_csv(ARCHIVO_CSV, parse_dates=["fecha"])
+
+    # --- Duplicados ---
+    duplicados = df[df.duplicated(subset=["municipio", "fecha"], keep=False)]
+    if not duplicados.empty:
+        print(f"  ⚠ {len(duplicados)} filas duplicadas (municipio+fecha) encontradas.")
+        if imprimir_reporte:
+            duplicados.sort_values(["municipio", "fecha"]).to_csv(REPORTE_DUPLICADOS, index=False)
+            print(f"    Detalle en: {REPORTE_DUPLICADOS}")
+        if reparar_duplicados:
+            df = df.drop_duplicates(subset=["municipio", "fecha"], keep="first")
+            df.to_csv(ARCHIVO_CSV, index=False)
+            print(f"    Duplicados eliminados del CSV (se conservó la primera ocurrencia).")
+
+    # --- Completitud por municipio-año ---
+    conteo = (
+        df.groupby(["municipio", "anio"])["fecha"]
+        .nunique()
+        .reset_index(name="dias")
+    )
+    conteo["dias_esp"] = conteo["anio"].apply(dias_esperados)
+
+    completos = conteo[conteo["dias"] >= conteo["dias_esp"]]
+    ya_descargados = set(zip(completos["municipio"], completos["anio"]))
+
+    incompletos = conteo[conteo["dias"] < conteo["dias_esp"]]
+
+    if not incompletos.empty:
+        # Quitar filas parciales para que el re-descargo no genere duplicados
+        combos_incompletos = set(zip(incompletos["municipio"], incompletos["anio"]))
+        df["_combo"] = list(zip(df["municipio"], df["anio"]))
+        df = df[~df["_combo"].isin(combos_incompletos)].drop(columns="_combo")
+        df.to_csv(ARCHIVO_CSV, index=False)
+
+        if imprimir_reporte:
+            incompletos.sort_values(["dias_esp"], ascending=False).to_csv(REPORTE_INCOMPLETOS, index=False)
+            print(f"  ⚠ {len(incompletos)} combinaciones municipio-año incompletas. Detalle en: {REPORTE_INCOMPLETOS}")
+
+    return ya_descargados, incompletos
+
+
+print("\nVerificando estado actual del CSV...")
+ya_descargados, _ = verificar_estado()
+print(f"Combinaciones municipio-año completas y verificadas: {len(ya_descargados)}")
 
 fallos = []
 
@@ -194,7 +257,36 @@ if fallos:
     pd.DataFrame({"municipio_fallido": fallos}).to_csv(ARCHIVO_LOG_FALLOS, index=False)
     print(f"\n{len(fallos)} municipios con fallos guardados en {ARCHIVO_LOG_FALLOS}")
 
+print("\nVerificación final de integridad...")
+ya_descargados_final, _ = verificar_estado(reparar_duplicados=True, imprimir_reporte=True)
+
+# Cruzar contra el universo completo (municipio x año) para detectar combinaciones
+# que nunca llegaron a escribirse (p. ej. un lote que falló por completo).
+universo = pd.MultiIndex.from_product(
+    [municipios["municipio"].unique(), range(RANGO_INICIO, RANGO_FIN + 1)],
+    names=["municipio", "anio"]
+).to_frame(index=False)
+
+universo["completo"] = list(zip(universo["municipio"], universo["anio"]))
+universo["completo"] = universo["completo"].isin(ya_descargados_final)
+
+faltantes_totales = universo[~universo["completo"]]
+
 print("\n========================================")
-print("Proceso terminado.")
+print("Resumen de integridad")
+print("========================================")
+print(f"Municipios en el estado:          {municipios['municipio'].nunique()}")
+print(f"Combinaciones municipio-año:      {len(universo)}")
+print(f"Completas y verificadas:          {len(ya_descargados_final)}")
+print(f"Faltantes o incompletas:          {len(faltantes_totales)}")
+
+if not faltantes_totales.empty:
+    faltantes_totales.drop(columns="completo").to_csv(REPORTE_INCOMPLETOS, index=False)
+    print(f"Detalle guardado en:              {REPORTE_INCOMPLETOS}")
+    print("\nSi vuelves a correr el script, retomará automáticamente solo estas combinaciones.")
+else:
+    print("✔ Todo el estado está completo, verificado y sin duplicados.")
+
+print("========================================")
 print(f"Archivo generado (CSV incremental): {ARCHIVO_CSV}")
 print("========================================")

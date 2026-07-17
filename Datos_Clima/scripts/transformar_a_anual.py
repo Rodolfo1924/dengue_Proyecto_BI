@@ -1,11 +1,13 @@
-import pandas as pd
 import sys
 from pathlib import Path
+
+import pandas as pd
 
 # ============================================================
 # CONFIGURA AQUÍ el archivo de entrada
 # ============================================================
-ARCHIVO_ENTRADA = "Datos_Clima\Datos_por_municipio\clima_Hidalgo.xlsx"   # <-- cambia esto por cada archivo
+BASE_DIR = Path(__file__).resolve().parent.parent
+ARCHIVO_ENTRADA = BASE_DIR / "Datos_por_municipio" / "Por_Dia" / "duplicados_Oaxaca.csv"
 
 # Columnas que se PROMEDIAN (temperaturas)
 COLS_PROMEDIO = ["temp_max", "temp_min", "temp_app_max", "temp_app_min"]
@@ -18,11 +20,28 @@ COLS_FIJAS = ["latitud", "longitud"]
 # ============================================================
 
 
-def transformar_a_anual(archivo_entrada: str) -> pd.DataFrame:
-    df = pd.read_excel(archivo_entrada)
+def cargar_datos(archivo_entrada: str | Path) -> pd.DataFrame:
+    ruta = Path(archivo_entrada)
+    if not ruta.is_absolute():
+        ruta = (BASE_DIR / ruta).resolve()
 
-    # Detectar formato de fecha automáticamente (acepta aaaa-mm-dd ISO o dd/mm/aaaa)
-    df["fecha"] = pd.to_datetime(df["fecha"], format="mixed", dayfirst=True)
+    if ruta.suffix.lower() == ".csv":
+        df = pd.read_csv(ruta)
+    elif ruta.suffix.lower() in {".xlsx", ".xls", ".xlsm"}:
+        df = pd.read_excel(ruta)
+    else:
+        raise ValueError(f"Formato no soportado: {ruta.suffix}")
+
+    if "fecha" not in df.columns:
+        raise KeyError("El archivo no contiene la columna 'fecha'.")
+
+    df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce", dayfirst=True)
+    df = df.dropna(subset=["fecha"])
+    return df
+
+
+def transformar_a_anual(archivo_entrada: str | Path) -> pd.DataFrame:
+    df = cargar_datos(archivo_entrada)
 
     # Año de cada registro
     df["anio"] = df["fecha"].dt.year
@@ -44,13 +63,15 @@ def transformar_a_anual(archivo_entrada: str) -> pd.DataFrame:
     return df_anual
 
 
-def procesar_archivo(archivo_entrada: str):
+def procesar_archivo(archivo_entrada: str | Path):
     ruta = Path(archivo_entrada)
-    df_anual = transformar_a_anual(archivo_entrada)
+    if not ruta.is_absolute():
+        ruta = (BASE_DIR / ruta).resolve()
 
-    salida = ruta.stem + "_ANUAL.xlsx"
-    df_anual.to_excel(salida, index=False)
-    print(f"[OK] {archivo_entrada} -> {salida}  ({len(df_anual)} filas)")
+    df_anual = transformar_a_anual(ruta)
+    salida = ruta.with_name(f"{ruta.stem}_ANUAL.csv")
+    df_anual.to_csv(salida, index=False)
+    print(f"[OK] {ruta} -> {salida}  ({len(df_anual)} filas)")
 
 
 if __name__ == "__main__":
