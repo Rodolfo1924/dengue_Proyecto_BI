@@ -68,48 +68,45 @@ def construir_fact_clima():
     print("[2/3] Cargando datos diarios de clima y tiempo...")
     clima = pd.read_csv(CLIMA_DIA_CSV)
     tiempo = pd.read_csv(DIM_TIEMPO_CSV)
+    geo = pd.read_csv(DIM_GEO_CSV)
 
     clima["fecha"] = pd.to_datetime(clima["fecha"], format="%d/%m/%Y", errors="coerce")
     tiempo["fecha"] = pd.to_datetime(tiempo["fecha"], errors="coerce")
 
-    tiempo = tiempo[["id_tiempo", "fecha", "dia", "mes", "anio"]].drop_duplicates(subset=["fecha"])
+    tiempo = tiempo[["id_tiempo", "fecha"]].drop_duplicates(subset=["fecha"])
 
-    fact = clima.merge(tiempo, on="fecha", how="left")
+    geo = geo.copy()
+    geo["entidad_norm"] = geo["entidad"].apply(normalizar_texto)
+    geo["municipio_norm"] = geo["municipio"].apply(normalizar_texto)
+
+    geo_estado = geo[geo["municipio"].astype(str).str.upper().eq("NO ESPECIFICADO")].copy()
+    geo_estado = geo_estado[["id_geografia", "entidad_norm"]].drop_duplicates(subset=["entidad_norm"])
+
+    clima["estado_norm"] = clima["estado"].apply(normalizar_texto)
+
+    fact = clima.merge(tiempo, left_on="fecha", right_on="fecha", how="left")
     fact = fact.dropna(subset=["id_tiempo"])
+
+    fact = fact.merge(
+        geo_estado.rename(columns={"entidad_norm": "estado_norm", "id_geografia": "id_geografia"}),
+        on="estado_norm",
+        how="left",
+    )
+    fact = fact.dropna(subset=["id_geografia"])
 
     fact = fact[[
         "id_tiempo",
-        "fecha",
-        "estado",
-        "latitud",
-        "longitud",
+        "id_geografia",
         "temp_max",
         "temp_min",
-        "temp_app_max",
-        "temp_app_min",
         "lluvia_acumulada",
         "evapotranspiracion",
-        "dia",
-        "mes",
-        "anio",
     ]].copy()
 
-    fact = fact.rename(columns={
-        "estado": "estado",
-        "latitud": "latitud",
-        "longitud": "longitud",
-        "temp_max": "temp_max",
-        "temp_min": "temp_min",
-        "temp_app_max": "temp_app_max",
-        "temp_app_min": "temp_app_min",
-        "lluvia_acumulada": "lluvia_acumulada",
-        "evapotranspiracion": "evapotranspiracion",
-    })
-
-    fact = fact.sort_values(["id_tiempo", "estado"]).reset_index(drop=True)
+    fact = fact.sort_values(["id_tiempo", "id_geografia"]).reset_index(drop=True)
     fact.to_csv(FACT_OUTPUT, index=False)
     print(f"[OK] Se generó {FACT_OUTPUT} con {len(fact)} filas")
-    print(f"[3/3] Vista previa:\n{fact.head(5).to_string(index=False)}")
+    print(f"[3/3] Vista previa:\n{fact.head(10).to_string(index=False)}")
 
 
 if __name__ == "__main__":
