@@ -1,16 +1,3 @@
-id_institucion,nombre
-1,CRUZ ROJA
-2,DIF
-3,ESTATAL
-4,IMSS
-5,IMSS-BIENESTAR
-6,ISSSTE
-7,MUNICIPAL
-8,PEMEX
-9,PRIVADA
-10,SEDENA
-11,SEMAR
-12,SSA
-13,UNIVERSITARIO
-20,"CODIGO 20 - PENDIENTE DE CONFIRMAR (no existe en catalogo original, aparece desde 2024)"
-99,NO ESPECIFICADO
+version https://git-lfs.github.com/spec/v1
+oid sha256:841be21fc9b54693ab437033a35ae8e63a0f6022966aafd9e364069e6355f37f
+size 284
