@@ -9,10 +9,10 @@ from calendar import isleap
 # ==========================================================
 
 # Cambia este valor por el estado que quieras descargar
-ESTADO = "Oaxaca"
+ESTADO = "Veracruz de Ignacio de la Llave"
 
 # Ruta del CSV con los municipios (columnas: entidad, municipio, latitud, longitud)
-CSV_MUNICIPIOS = r"Datos_por_municipio\poblacion.csv"
+CSV_MUNICIPIOS = r"C:\Users\basan\Desktop\GITHUB-DENGUE\dengue_Proyecto_BI\Datos_Clima\Datos_por_municipio\poblacion.csv"
 
 URL = "https://archive-api.open-meteo.com/v1/archive"
 
