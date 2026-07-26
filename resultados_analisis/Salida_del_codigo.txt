@@ -1,0 +1,38 @@
+Entrenando modelo interpretable...
+=== Evaluación en Entrenamiento ===
+Accuracy: 0.9051724137931034
+
+Reporte de clasificación:
+              precision    recall  f1-score   support
+
+        ALTO      0.921     0.907     0.914       193
+        BAJO      0.929     0.953     0.941       193
+       MEDIO      0.865     0.856     0.860       194
+
+    accuracy                          0.905       580
+   macro avg      0.905     0.905     0.905       580
+weighted avg      0.905     0.905     0.905       580
+
+Matriz de confusión:
+[[184   9   0]
+ [ 13 166  15]
+ [  1  17 175]]
+
+=== Evaluación en Prueba ===
+Accuracy: 0.8017241379310345
+
+Reporte de clasificación:
+              precision    recall  f1-score   support
+
+        ALTO      0.849     0.849     0.849        53
+        BAJO      0.864     0.826     0.844        23
+       MEDIO      0.707     0.725     0.716        40
+
+    accuracy                          0.802       116
+   macro avg      0.807     0.800     0.803       116
+weighted avg      0.803     0.802     0.802       116
+
+Matriz de confusión:
+[[19  4  0]
+ [ 3 29  8]
+ [ 0  8 45]]
